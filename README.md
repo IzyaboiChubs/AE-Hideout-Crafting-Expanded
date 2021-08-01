@@ -7,7 +7,7 @@ Some sites to look up EFT item IDs:
   * https://items.sp-tarkov.com
   * https://eft.maoci.eu
 
-Huge thanks to AE's c0pyright for figuring how to add hideout crafting recipes and providing the templates! :)
+Huge thanks to AE's c0pyright for figuring out how to add hideout crafting recipes and providing the templates! :)
 
 # How to use
 Edit the config.js file to create hideout crafting recipes. Take note of the mentioned sites above for item IDs.
