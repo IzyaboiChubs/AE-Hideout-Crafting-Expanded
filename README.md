@@ -1,4 +1,4 @@
-# AE-Hideout-Crafting-Expanded
+# Chubs-Hideout-Crafting-Expanded
 A mod that lets users create hideout crafting recipes more easily and safely.
 
 Some sites to look up EFT item IDs:
