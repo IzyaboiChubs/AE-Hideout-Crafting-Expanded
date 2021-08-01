@@ -1,0 +1,28 @@
+{
+  "_id": "RandomUniqueID-EG-HatAndMilkFor2Cokes",
+  "areaType": 10,
+  "requirements": [
+    { 
+      "areaType": 10, 
+      "requiredLevel": 2, 
+      "type": "Area" 
+    },
+    {
+      "templateId": "5d96141523f0ea1b7f2aacab",
+      "count": 1,
+      "isFunctional": false,
+      "type": "Item"
+    },
+    {
+      "templateId": "575146b724597720a27126d5",
+      "count": 1,
+      "isFunctional": false,
+      "type": "Item"
+    }
+  ],
+  "productionTime": 1024,
+  "endProduct": "57514643245977207f2c2d09",
+  "continuous": false,
+  "count": 2,
+  "productionLimitCount": 0
+}
