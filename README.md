@@ -11,3 +11,6 @@ Huge thanks to AE's c0pyright for figuring how to add hideout crafting recipes a
 
 # How to use
 Edit the config.js file to create hideout crafting recipes. Take note of the mentioned sites above for item IDs.
+
+# Compatibility
+This mod was based from AE v2.0.7.1. This should be compatible with other AE versions that use the same file structure as that version.
