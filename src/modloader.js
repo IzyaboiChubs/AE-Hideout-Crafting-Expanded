@@ -1,134 +1,161 @@
 exports.mod = (mod_data) => {
-	const ModFolders = mod_data.folders;
-	const ModTemplates = mod_data.templates;
 	const fs = require("fs");
 	const path = require("path");
 	const config = require("../config.js");
-	const configSize = Object.keys(config).length;
-	const dbFiles = path.join(__dirname, "../../../../db/items/");
-	const modFiles = path.join(__dirname, "../", ModFolders[0]);
-	const modDBFile = path.join(__dirname, "../", ModFolders[1]);
+
 	const PathResolver = global.internal.path.resolve;
+	const ModTemplate = mod_data.template;
+	const ModAreas = mod_data.areas;
+	const ModDirectories = mod_data.directories;
+
+	const configSize = Object.keys(config).length;
+	const recipesDir = path.join(__dirname, "../", ModDirectories[0]);
+	const templateFile = path.join(__dirname, "../", ModDirectories[1] + ModTemplate);
 	let newRec = global.fileIO.readParsed(PathResolver('user/cache/hideout_production.json'));
 
-	setupValidationDB();
 	if (validateConfig()) {
 		createCraftingRecipes();
 	} else {
 		logger.logError("[MOD] Hideout Crafting Expanded by Chubs encountered errors! Mod was not applied...");
 	}
 
-	function setupValidationDB() {
-		let itemIDs = [];
-
-		fs.readdir(dbFiles, { withFileTypes: true }, (err, dirents) => {
-			if (err) throw err;
-			
-			const dbItems = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
-
-			dbItems.forEach(function (dbItem) {
-				let data = global.fileIO.readParsed(dbFiles + dbItem);
-
-				data.forEach(function (item) {
-					itemIDs.push(item._id);
-				});
-			});
-
-			fs.writeFile(modDBFile + "itemsDB.json", JSON.stringify(itemIDs, null, 2), function(err) {
-				if (err) throw err;
-				logger.logInfo("Item DB for validation has been setup.");
-			});
-		});
-	}
-
 	function validateConfig() {
-		let validationDB = global.fileIO.readParsed(modDBFile + "itemsDB.json");
+		let validationSource = global.fileIO.readParsed(db.user.cache.items);
+		let validationData = Object.keys(validationSource.data);
 		let isConfigValid = true;
 
-		for (let x = 0; x < configSize; x++) {
-			let endProduct = config[x].ProductConfiguration.EndProduct.replace(/\s/g,'');
-			let componentItems = [];
-			let isProductItemIDValid = false;
+		recipeLoop:
+			for (let x = 0; x < configSize; x++) {
+				const recipeName = config[x].RecipeName;
+				const components = config[x].Requirements.Components;
+				const areaLevel = config[x].Requirements.AreaLevel;
+				const productionTime = config[x].ProductConfiguration.ProductionTime;
+				const receiveHowMany = config[x].ProductConfiguration.ReceiveHowMany;
+				let hideoutArea = config[x].HideoutArea;
+				let endProduct = config[x].ProductConfiguration.EndProduct;
 
-			if (config[x].RecipeName == "") {
-				logger.logError("RecipeName from the " + x + "(st|nd|rd|th) recipe is blank. This field must not be blank.");
-				isConfigValid = false;
-				break;
-			}
+				const componentItems = [];
 
-			if (config[x].HideoutArea.toLowerCase() != "workbench" &&  config[x].HideoutArea.toLowerCase() != "medstation"
-			&& config[x].HideoutArea.toLowerCase() != "lavatory") {
-				logger.logError("HideoutArea value (" + config[x].HideoutArea + ") from the " + config[x].RecipeName + " recipe is not recognized. Valid inputs are [workbench, lavatory, medstation].");
-				isConfigValid = false;
-			}
+				if (typeof recipeName != "string") {
+					logger.logError(`RecipeName must be a string! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (typeof hideoutArea != "string") {
+					logger.logError(`HideoutArea must be a string! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (!Array.isArray(components)) {
+					logger.logError(`Components must be an array of string! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (typeof areaLevel != "number") {
+					logger.logError(`AreaLevel must be a number! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (typeof productionTime != "number") {
+					logger.logError(`ProductionTime must be a number! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (typeof endProduct != "string") {
+					logger.logError(`EndProduct must be a string! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (typeof receiveHowMany != "number") {
+					logger.logError(`ReceiveHowMany must be a number! This field in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+					isConfigValid = false;
+					break;
+				} else if (!recipeName) {
+					logger.logError(`RecipeName from the ${x + 1}(st|nd|rd|th) recipe is blank. This field must not be blank.`);
+					isConfigValid = false;
+					break;
+				}
 
-			for (let i = 0; i < config[x].Requirements.Components.length; i++) {
-				const componentConfig = config[x].Requirements.Components[i].split(":");
-				const componentItem = componentConfig[0].replace(/\s/g,'');
-				const componentCount = componentConfig[1].replace(/\s/g,'');
-				let isComponentItemIDValid = false;
-				
-				for (let j = 0; j < validationDB.length; j++) {
-					if (componentItem == validationDB[j]) {
-						isComponentItemIDValid = true;
-						continue;
+				for (let component in components) {
+					if (typeof components[component] != "string") {
+						logger.logError(`A component must be a string! Check for invalid records in the Components field of the ${x + 1}(st|nd|rd|th) recipe.`);
+						isConfigValid = false;
+						break recipeLoop;
 					}
 				}
 
-				if (!isComponentItemIDValid) {
-					logger.logError("Component item ID (" + componentItem + ") from the " + config[x].RecipeName + " recipe is invalid. Please double check.");
+				hideoutArea = hideoutArea.toLowerCase().replace(/\s/g,'');
+				endProduct = endProduct.replace(/\s/g,'');
+
+				if (!hideoutArea) {
+					logger.logError(`No fields for a recipe can be blank! HideoutArea field in the ${recipeName} recipe is found blank.`);
+					isConfigValid = false;
+				} else if (!Object.keys(ModAreas).includes(hideoutArea)) {
+					logger.logError(`HideoutArea value (${hideoutArea}) from the ${recipeName} recipe is unrecognized. Valid inputs are [ Lavatory | MedStation | Nutrition Unit | Workbench | Intelligence Center ].`);
 					isConfigValid = false;
 				}
 
-				if (componentCount < 1) {
-					logger.logError("Please input a number greater than 0 for how many of the component is needed for the crafting recipe. Component count value (" + componentCount + ") for " + componentItem + " from the " + config[x].RecipeName + " recipe is invalid!");
+				if (components.length < 1) {
+					logger.logError(`Components for the ${recipeName} recipe must be defined!`);
+					isConfigValid = false;
+				} else {
+					for (let i = 0; i < components.length; i++) {
+						const component = components[i].split(":");
+
+						if (component.length == 1) {
+							logger.logError(`A component given in ${recipeName} is invalid. Please make sure to follow this format: <item_id_for_component>:<how_many_are_needed>`);
+							isConfigValid = false;
+						} else {
+							const componentItem = component[0].replace(/\s/g,'');
+							const componentCount = Math.trunc(component[1].replace(/\s/g,''));
+							
+							if (!componentItem) {
+								logger.logError(`An item ID for a component from the ${recipeName} is blank. This cannot be blank.`);
+								isConfigValid = false;
+							} else if (!validationData.includes(componentItem)) {
+								logger.logError(`Component item ID (${componentItem}) from the ${recipeName} recipe is invalid. Please double check.`);
+								isConfigValid = false;
+							}
+			
+							if (isNaN(componentCount)) {
+								logger.logError(`Count for how many of the components are needed (${componentCount}) cannot be converted to a number. A component in the ${x + 1}(st|nd|rd|th) recipe is invalid.`);
+								isConfigValid = false;
+							} else if (componentCount < 1) {
+								logger.logError(`Please input a number greater than 0 for how many of the component is needed for the crafting recipe. Component count value (${componentCount}) for ${componentItem} from the ${recipeName} recipe is either blank or invalid!`);
+								isConfigValid = false;
+							}
+
+							componentItems.push(componentItem);
+
+							const validatorArray = componentItems.sort();
+
+							for (let y = 0; y < validatorArray.length; y++) {
+								if (validatorArray[y + 1] === validatorArray[y]) {
+									logger.logError(`Component duplicates found from the ${recipeName} recipe. No component duplicates allowed!`);
+									isConfigValid = false;
+								}
+							}
+						}
+					}
+				}
+
+				if (areaLevel < 1 || areaLevel > 3) {
+					logger.logError(`Please indicate a valid level (1-3) for the given hideout area. AreaLevel value (${areaLevel}) from the ${recipeName} recipe is invalid!`);
 					isConfigValid = false;
 				}
 
-				componentItems.push(componentItem);
-			}
+				if (productionTime < 1) {
+					logger.logError(`ProductionTime number must not be less than 1. This value (${productionTime}) from the ${recipeName} recipe is invalid!`);
+					isConfigValid = false;
+				}
 
-			const validatorArray = componentItems.sort();
+				if (!endProduct) {
+					logger.logError(`No fields for a recipe can be blank! EndProduct field in the ${recipeName} recipe is found blank.`);
+					isConfigValid = false;
+				} else if (!validationData.includes(endProduct)) {
+					logger.logError(`EndProduct item ID (${endProduct}) from the ${recipeName} recipe is invalid. Please double check.`);
+					isConfigValid = false;
+				}
 
-			for (let y = 0; y < validatorArray.length; y++) {
-				if (validatorArray[y + 1] === validatorArray[y]) {
-					logger.logError("Component duplicates found from the " + config[x].RecipeName + " recipe. No component duplicates allowed!");
+				if (receiveHowMany < 1) {
+					logger.logError(`ReceiveHowMany number must not be less than 1. This value (${receiveHowMany}) from the ${recipeName} recipe is invalid!`);
 					isConfigValid = false;
 				}
 			}
-
-			if (config[x].Requirements.Components.length < 1) {
-				logger.logError("Components for the " + config[x].RecipeName + " recipe must be defined!");
-				isConfigValid = false;
-			}
-
-			if (config[x].Requirements.AreaLevel < 1 || config[x].Requirements.AreaLevel > 3) {
-				logger.logError("Please indicate a valid level (1-3) for the given hideout area. AreaLevel value (" + config[x].Requirements.AreaLevel + ") from the " + config[x].RecipeName + " recipe is invalid!");
-				isConfigValid = false;
-			}
-
-			if (config[x].ProductConfiguration.ProductionTime < 1) {
-				logger.logError("ProductionTime number must not be less than 1. This value (" + config[x].ProductConfiguration.ProductionTime + ") from the " + config[x].RecipeName + " recipe is invalid!");
-				isConfigValid = false;
-			}
-
-			for (let y = 0; y < validationDB.length; y++) {
-				if (endProduct == validationDB[y]) {
-					isProductItemIDValid = true;
-					continue;
-				}
-			}
-
-			if (!isProductItemIDValid) {
-				logger.logError("EndProduct item ID (" + endProduct + ") from the " + config[x].RecipeName + " recipe is invalid. Please double check.");
-				isConfigValid = false;
-			}
-
-			if (config[x].ProductConfiguration.ReceiveHowMany < 1) {
-				logger.logError("ReceiveHowMany number must not be less than 1. This value (" + config[x].ProductConfiguration.ReceiveHowMany + ") from the " + config[x].RecipeName + " recipe is invalid!");
-				isConfigValid = false;
-			}
-		}
 
 		return isConfigValid;
 	}
@@ -137,15 +164,23 @@ exports.mod = (mod_data) => {
 		let templateData; 
 
 		for (let x = 0; x < configSize; x++) {
-			templateData = global.fileIO.readParsed(path.join(__dirname, "../", ModTemplates[config[x].HideoutArea.toLowerCase()]));
+			const recipeName = config[x].RecipeName;
+			const hideoutArea = config[x].HideoutArea.toLowerCase().replace(/\s/g,'');
+			const components = config[x].Requirements.Components;
+			const areaLevel = config[x].Requirements.AreaLevel;
+			const productionTime = config[x].ProductConfiguration.ProductionTime;
+			const endProduct = config[x].ProductConfiguration.EndProduct.replace(/\s/g,'');
+			const receiveHowMany = config[x].ProductConfiguration.ReceiveHowMany;
+
+			templateData = global.fileIO.readParsed(templateFile);
 			
-			for (let i = 0; i < config[x].Requirements.Components.length; i++) {
-				const componentConfig = config[x].Requirements.Components[i].split(":");
-				const componentItem = componentConfig[0].replace(/\s/g,'');
-				const componentCount = componentConfig[1].replace(/\s/g,'');
+			for (let i = 0; i < components.length; i++) {
+				const component = components[i].split(":");
+				const componentItem = component[0].replace(/\s/g,'');
+				const componentCount = Math.trunc(component[1].replace(/\s/g,''));
 
 				const componentTemplate = { "templateId": componentItem, "count": componentCount, "isFunctional": false, "type": "Item" }
-				const areaTemplate = { "areaType": templateData.areaType , "requiredLevel": config[x].Requirements.AreaLevel, "type": "Area" }
+				const areaTemplate = { "areaType": ModAreas[hideoutArea], "requiredLevel": areaLevel, "type": "Area" }
 
 				if (i == 0) {
 					templateData.requirements = [ areaTemplate, componentTemplate ];
@@ -155,20 +190,21 @@ exports.mod = (mod_data) => {
 				templateData.requirements.push(componentTemplate);
 			}
 			
-			templateData._id = config[x].RecipeName;
-			templateData.productionTime = config[x].ProductConfiguration.ProductionTime;
-			templateData.endProduct = config[x].ProductConfiguration.EndProduct.replace(/\s/g,'');
-			templateData.count = config[x].ProductConfiguration.ReceiveHowMany;
+			templateData._id = recipeName;
+			templateData.areaType = ModAreas[hideoutArea];
+			templateData.productionTime = productionTime;
+			templateData.endProduct = endProduct;
+			templateData.count = receiveHowMany;
 
 			newRec.data.push(templateData);
 			
-			fs.writeFile(modFiles + config[x].RecipeName + ".json", JSON.stringify(templateData, null, 2), function (err) {
+			fs.writeFile(recipesDir + recipeName + ".json", JSON.stringify(templateData, null, 2), function (err) {
 				if (err) throw err;
-				logger.logInfo("Created the " + config[x].RecipeName + ".json recipe file!");
+				logger.logInfo("Created the " + recipeName + ".json recipe file!");
 			});
 		}
 
-		fs.readdir(modFiles, { withFileTypes: true }, (err, dirents) => {
+		fs.readdir(recipesDir, { withFileTypes: true }, (err, dirents) => {
 			if (err) return logger.logError("Could not read files from the directory");
 
 			const items = dirents.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
@@ -176,15 +212,15 @@ exports.mod = (mod_data) => {
 			items.forEach(function (item) {
 				let doesRecipeExist = false;
 				
-				for (let y = 0; y < configSize; y++) {
-					if (item == (config[y].RecipeName + ".json")) {
+				for (let x = 0; x < configSize; x++) {
+					if (item == (config[x].RecipeName + ".json")) {
 						doesRecipeExist = true;
 						logger.logInfo("Found recipe with the same name in config")
 					}
 				}
 
 				if (!doesRecipeExist) {
-					fs.unlink(modFiles + item, function(err) {
+					fs.unlink(recipesDir + item, function(err) {
 						if (err) throw err;
 						logger.logInfo("Removed recipe since it does not exist in the config: " + item);
 					})

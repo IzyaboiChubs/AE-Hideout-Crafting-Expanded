@@ -1,15 +1,15 @@
 
     /* 
         Take note of the following instructions for each type of field:
-            * String            - Enclose input in double quotes ("")
-            * List of String    - Enclose input in double quotes ("") and add a comma (,) at the end except for the last one in the list
-            * Integer           - Do not enclose in double quotes ("")
+            * String            - Accepts letters and numbers. Enclose input in double quotes ("").
+            * List of String    - Accepts letters and numbers. Enclose input in double quotes ("") and add a comma (,) at the end except for the last one in the list.
+            * Integer           - Accepts numbers only. Do not enclose in double quotes ("").
     */
    
 module.exports =  [
     {
         "RecipeName": "ski_mask",                       // (String) Name of the recipe. This will just be used to create the JSON file needed for the recipe. Must be unique otherwise the first instance will just be overridden.
-        "HideoutArea": "workbench",                     // (String) Set what hideout area should this craft be for. Choices (ignores case): [ Workbench | MedStation | Lavatory ]
+        "HideoutArea": "lavatory",                      // (String) Set what hideout area should this craft be for. Choices (ignores case): [ Lavatory | MedStation | Nutrition Unit | Workbench | Intelligence Center ]
         "Requirements": {               
             "Components": [                             // (List of String) Add components to the recipe. Format is <item_id>:<how_many_and_must_not_be_0>
                 "5e2af47786f7746d404f3aaa:1",
@@ -23,7 +23,7 @@ module.exports =  [
             "ReceiveHowMany": 1                         // (Integer) Set how many item you will receive after crafting. Input must not be less than 1.
         }
     }
-
+    
     /* As a guide, copy below section if you plan to add additional recipes and paste it in the previous line [DO NOT INCLUDE THIS LINE]
     ,{
         "RecipeName": "",
