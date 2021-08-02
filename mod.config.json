@@ -1,19 +1,22 @@
 {
 	"name": "Hideout-Crafting-Expanded",
 	"author": "Chubs",
-	"description": "Adds additional crafts to the Hideout",
+	"description": "Lets anyone add additional crafts to the Hideout",
 	"license": "MIT",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"src":{ 
 		"src/modloader.js": "CacheModLoad"
 	},
-	"templates": {
-		"workbench": "files/recipes/templates/workbench_craftTemplate.json",
-		"lavatory": "files/recipes/templates/lavatory_craftTemplate.json",
-		"medstation": "files/recipes/templates/medStation_craftTemplate.json"
+	"template": "recipe_template.json",
+	"areas": {
+		"lavatory": 2,
+		"medstation": 7,
+		"nutritionunit": 8,
+		"workbench": 10,
+		"intelligencecenter": 11
 	},
-    "folders": [
-        "files/recipes/",
-		"files/db/"
-    ]
+    "directories": [
+		"files/recipes/",
+		"files/recipes/templates/"
+	]
 }

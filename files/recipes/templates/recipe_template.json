@@ -1,0 +1,22 @@
+{
+    "_id": "",
+    "areaType": 1,
+    "requirements": [
+      {
+        "areaType": 1,
+        "requiredLevel": 1,
+        "type": "Area"
+      },
+      {
+        "templateId": "",
+        "count": 1,
+        "isFunctional": false,
+        "type": "Item"
+      }
+    ],
+    "productionTime": 1,
+    "endProduct": "",
+    "continuous": false,
+    "count": 1,
+    "productionLimitCount": 0
+  }
